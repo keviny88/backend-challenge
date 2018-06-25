@@ -31,12 +31,22 @@ class MyDatabase:
         self.c.execute(sql_create_table)
         self.conn.commit()
 
+    # Creating a a visual representation of the table
+    def show_table(self, name):
+        # Extract the header names and print them out
+        self.c.execute("PRAGMA table_info({})".format(name))
+        header = ""
+        rows = self.c.fetchall()
+        for row in rows:
+            header += row[1] + "  | "
+        print(header)
 
 
 
 
 x = MyDatabase()
 x.create_table('schema.csv', 'authors')
+x.show_table('authors')
 x.conn.close()
 
 
