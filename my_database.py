@@ -1,28 +1,31 @@
 import sqlite3
 import csv
-sqlite_file = 'my_db.sqlite'
 
 class MyDatabase:
 
-    sqlite_file = 'my_db.sqlite'
+    sqlite_file = 'sqlite/my_db.sqlite'
 
+    # We initialize the class by connecting to the database. If it does not exist, a new one will be automatically created.
     def __init__(self):
-        self.conn = sqlite3.connect(sqlite_file)
+        self.conn = sqlite3.connect(self.sqlite_file)
         self.c = self.conn.cursor()
 
+    # Reads through the schema csv and creates a statement that will add a table to the database
     def create_table(self, name, schema):
-        self.c.execute("DROP TABLE IF EXISTS " + name)
+        self.delete_table(name)
         sql_create_table = "CREATE TABLE IF NOT EXISTS " + name + "("
 
         with open(schema, "r") as f:
             reader = csv.reader(f, delimiter = "\t")
             next(f)
-            for line in reader:
+            for i, line in enumerate(reader):
+                # If a row fails to have exactly a name, width, and type, cancel creation process and delete table
                 try:
                     field_name, width, type = line[0].split(',')
                 except ValueError:
-                    print("Value for this line does not have three fields")
-                    continue
+                    print("Row " + str(i) + " does not have three fields")
+                    self.delete_table(name)
+                    exit()
                 sql_create_table += " {} {}({}),".format(field_name, type, width)
 
         sql_create_table= sql_create_table.rstrip(",") + ");"
@@ -39,13 +42,13 @@ class MyDatabase:
             sql_insert += field + ","
         sql_insert = sql_insert.rstrip(",") + ") VALUES ("
 
-        # We look at the length of headers to know how many '?' to add to the statement
+        # We look at the length of headers to know how many fields (?) to add to the statement
         for i in range(len(headers)):
             sql_insert += "?" + ","
         sql_insert = sql_insert.rstrip(",") + ")"
 
         # Next we gather the data from the CSV and put it into a list
-        # We optimize database update speed, which requires extra space
+        # We optimize database update speed by sacrificing a small storage use
         data = []
         with open(data_file, "r") as f:
             reader = csv.reader(f, delimiter="\t")
@@ -73,7 +76,7 @@ class MyDatabase:
         for row in rows:
             row_string = ""
             for col in row:
-                row_string += str(col) + "  | "
+                row_string += str(col) + " | "
             print(row_string)
 
     # Gets headers for a table and returns them in a list
@@ -81,13 +84,9 @@ class MyDatabase:
         self.c.execute("PRAGMA table_info({})".format(name))
         return [row[1] for row in self.c.fetchall()]
 
+    # Deletes table
+    def delete_table(self, name):
+        self.c.execute("DROP TABLE IF EXISTS " + name)
+
     def __del__(self):
         self.conn.close()
-
-x = MyDatabase()
-x.create_table('authors', 'schema.csv')
-x.insert_data('authors', 'data.csv')
-x.show_table('authors')
-# x.show_table('authors')
-
-
