@@ -11,6 +11,23 @@ Assumptions
 - The description makes it seem like we can assume that there will only be one table, with its schema described in the file, "schema.csv". I allowed my program, and many of the class methods, to also allow schemas with different names, to account for scaling in the future and the possibility of having several tables.
 - As SQLite is dynamically typed and not staticly typed like MySQL, we assume that the types of the data in the data.csv file will correctly match their corresponding data types as listed in the schema.
 
+Running The Code
+--------------
+
+Create a virtual environment and install the project's dependencies.
+
+```
+mkvirtualenv backend-challenge
+
+pip install -r requirements.txt
+```
+
+Then run the project:
+
+```
+python __main__.py
+```
+
 System Design
 --------------
 1. The database program is incorporated into a class, MyDatabase, that establishes the connection to the database as well as provides methods that allow for table creation, deletion, and display, as well as data insertion.
