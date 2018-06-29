@@ -11,28 +11,30 @@ class MyDatabase:
         self.c = self.conn.cursor()
 
     # Reads through the schema csv and creates a statement that will add a table to the database
-    def create_table(self, name, schema):
+    def create_table(self, name, schema_file_posix_path):
         self.delete_table(name)
         sql_create_table = "CREATE TABLE IF NOT EXISTS " + name + "("
 
-        with open(schema, "r") as f:
-            reader = csv.reader(f, delimiter = "\t")
-            next(f)
-            for i, line in enumerate(reader):
-                # If a row fails to have exactly a name, width, and type, cancel creation process and delete table
-                try:
-                    field_name, width, type = line[0].split(',')
-                except ValueError:
-                    print("Row " + str(i) + " does not have three fields")
-                    exit()
-                sql_create_table += " {} {}({}),".format(field_name, type, width)
+        reader = csv.reader(schema_file_posix_path.open().readlines())
+        for i, line in enumerate(reader):
+            # Ignore the header
+            if i == 0:
+                continue
+
+            # If a row fails to have exactly a name, width, and type, cancel creation process and delete table
+            if len(line) != 3:
+                print("Row " + str(i) + " does not have three fields")
+                exit()
+
+            field_name, width, type = line
+            sql_create_table += " {} {}({}),".format(field_name, type, width)
 
         sql_create_table= sql_create_table.rstrip(",") + ");"
         self.c.execute(sql_create_table)
         self.conn.commit()
 
     # Since we are inserting data a CSV at a time, we will use batch updates for speed optimization
-    def insert_data(self, name, data_file):
+    def insert_data(self, name, data_file_posix_path):
         # First we create the SQL batch statement
         headers = self.get_headers(name)
         sql_insert = "INSERT INTO " + name + "("
@@ -49,16 +51,14 @@ class MyDatabase:
         # Next we gather the data from the CSV and put it into a list
         # We optimize database update speed by sacrificing a small storage use
         data = []
-        with open(data_file, "r") as f:
-            reader = csv.reader(f, delimiter="\t")
-            for line in reader:
-                entry = tuple([x for x in line[0].split(",")])
+        reader = csv.reader(data_file_posix_path.open().readlines())
 
-                # If length of row is not equal to header list length, then this entry is invalid
-                if len(entry) == len(headers):
-                    data.append(entry)
-                else:
-                    print("Entry has wrong number of columns!")
+        for line in reader:
+            # If length of row is not equal to header list length, then this entry is invalid
+            if len(line) == len(headers):
+                data.append(line)
+            else:
+                print("Entry has wrong number of columns!")
 
         self.c.executemany(sql_insert, data)
         self.conn.commit()

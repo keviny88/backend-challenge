@@ -10,7 +10,7 @@ if __name__ == '__main__':
     if not schema.is_file() or not data.is_file():
         print("Missing schema or data file!")
     else:
-        name = input("Enter a table name: ")
+        name = raw_input("Enter a table name: ")
         print("")
         myDB.create_table(name, schema)
         myDB.insert_data(name, data)
